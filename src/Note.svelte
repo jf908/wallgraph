@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import { contextMenu } from './context-menu';
+  import { SelStyle } from './Board.svelte';
   const dispatch = createEventDispatcher();
 
   import type { Note } from './store';
@@ -39,7 +40,7 @@
       mouseDownCoords.x === e.clientX &&
       mouseDownCoords.y === e.clientY
     ) {
-      dispatch('select', e.shiftKey);
+      dispatch('select', e.shiftKey ? SelStyle.Toggle : SelStyle.Normal);
       if (!e.shiftKey) {
         textareaEl.focus();
       }
@@ -49,11 +50,12 @@
 
   const noteMenu = [
     [
-      { name: 'Copy' },
+      { name: 'Cut', callback: () => dispatch('operation', 'cut') },
+      { name: 'Copy', callback: () => dispatch('operation', 'copy') },
       {
         name: 'Duplicate',
         callback: () => {
-          dispatch('duplicate');
+          dispatch('operation', 'duplicate');
         },
       },
       {
@@ -66,9 +68,11 @@
     [
       {
         name: 'Bring to front',
+        callback: () => dispatch('operation', 'front'),
       },
       {
         name: 'Send to back',
+        callback: () => dispatch('operation', 'back'),
       },
     ],
   ];
@@ -77,7 +81,7 @@
     if (document.activeElement !== textareaEl) {
       e.preventDefault();
 
-      dispatch('select', false);
+      dispatch('select', SelStyle.NoOverride);
 
       $contextMenu = {
         menu: noteMenu,

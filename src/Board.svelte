@@ -1,12 +1,29 @@
+<script lang="ts" context="module">
+  export const enum SelStyle {
+    Normal,
+    Toggle,
+    NoOverride,
+  }
+</script>
+
 <script lang="ts">
   import Note from './Note.svelte';
   import SelectionBox from './SelectionBox.svelte';
 
-  import { createNote, duplicateNotes, notes } from './store';
+  import {
+    bringToFront,
+    clipboard,
+    createNote,
+    deleteNotes,
+    duplicateNotes,
+    notes,
+    sendToBack,
+  } from './store';
   import { contextMenu } from './context-menu';
   import { fixNegativeRectangle, rectCollision } from './rectangle';
 
-  let selected: { [id: string]: { x: number; y: number } } = {};
+  let selected: string[] = [];
+  let selectedStart: { x: number; y: number }[] = [];
 
   let selectionBox: { width: number; height: number } | null = null;
   let selectionStart: { x: number; y: number } | null = null;
@@ -18,7 +35,7 @@
   }
 
   function onMouseDown(e: MouseEvent) {
-    selected = {};
+    selected = [];
     selectionStart = { x: e.clientX, y: e.clientY };
   }
 
@@ -33,25 +50,17 @@
           ...selectionStart,
           ...selectionBox,
         });
-        selected = $notes.reduce((acc, n) => {
-          if (rectCollision(n, box)) {
-            console.log('add!');
-            return { ...acc, [n.id]: { x: 0, y: 0 } };
-          }
-          return acc;
-        }, {});
+        selected = $notes.order.filter((id) =>
+          rectCollision($notes.store[id], box)
+        );
       }
       if (dragStart) {
-        $notes = $notes.map((note) => {
-          if (selected[note.id]) {
-            return {
-              ...note,
-              x: selected[note.id].x + e.clientX - dragStart.x,
-              y: selected[note.id].y + e.clientY - dragStart.y,
-            };
-          } else {
-            return note;
-          }
+        selected.forEach((id, i) => {
+          $notes.store[id] = {
+            ...$notes.store[id],
+            x: selectedStart[i].x + e.clientX - dragStart.x,
+            y: selectedStart[i].y + e.clientY - dragStart.y,
+          };
         });
       }
     }
@@ -66,22 +75,36 @@
   function startDrag({ x, y }: { x: number; y: number }, id: string) {
     dragStart = { x, y };
 
-    if (selected[id]) {
-      Object.keys(selected).forEach((id) => {
-        const note = $notes.find((x) => x.id === id);
-        selected[id] = { x: note.x, y: note.y };
-      });
+    if (selected.includes(id)) {
+      selectedStart = selected.map((id) => ({
+        x: $notes.store[id].x,
+        y: $notes.store[id].y,
+      }));
     } else {
-      const note = $notes.find((x) => x.id === id);
-      selected = { [id]: { x: note.x, y: note.y } };
+      selected = [id];
+      selectedStart = [{ x: $notes.store[id].x, y: $notes.store[id].y }];
     }
   }
 
-  function selectNote(id, add: boolean) {
-    if (!add) {
-      selected = {};
+  function selectNote(id, style: SelStyle = SelStyle.Normal) {
+    switch (style) {
+      case SelStyle.Normal: {
+        selected = [id];
+      }
+      case SelStyle.Toggle: {
+        console.log('tog');
+        if (selected.includes(id)) {
+          selected = selected.filter((i) => i === id);
+        } else {
+          selected = [...selected, id];
+        }
+      }
+      case SelStyle.NoOverride: {
+        if (!selected.includes(id)) {
+          selected = [id];
+        }
+      }
     }
-    selected[id] = { x: 0, y: 0 };
 
     if (document.activeElement.nodeName === 'TEXTAREA') {
       (document.activeElement as HTMLTextAreaElement).blur();
@@ -91,16 +114,29 @@
   function onKeydown(e: KeyboardEvent) {
     if (e.code === 'KeyA' && e.ctrlKey) {
       e.preventDefault();
-      selected = $notes.reduce(
-        (acc, x) => ({ ...acc, [x.id]: { x: 0, y: 0 } }),
-        {}
-      );
+      selected = $notes.order;
+    }
+
+    if (e.code === 'KeyC' && e.ctrlKey) {
+      e.preventDefault();
+      $clipboard = selected.map((id) => $notes.store[id]);
+    }
+
+    if (e.code === 'KeyX' && e.ctrlKey) {
+      e.preventDefault();
+      $clipboard = selected.map((id) => $notes.store[id]);
+      deleteNotes(selected);
+    }
+
+    if (e.code === 'KeyV' && e.ctrlKey) {
+      e.preventDefault();
+      selected = duplicateNotes($clipboard);
     }
 
     if (e.code === 'Delete') {
       if (document.activeElement.nodeName !== 'TEXTAREA') {
-        $notes = $notes.filter((note) => !selected[note.id]);
-        selected = {};
+        deleteNotes(selected);
+        selected = [];
       }
     }
   }
@@ -126,11 +162,30 @@
 
   function onOperation(operation: { detail: string }) {
     switch (operation.detail) {
+      case 'cut': {
+        $clipboard = selected.map((id) => $notes.store[id]);
+        deleteNotes(selected);
+        selected = [];
+      }
       case 'delete': {
-        $notes = $notes.filter((note) => !selected[note.id]);
+        deleteNotes(selected);
+        selected = [];
         break;
       }
       case 'duplicate': {
+        selected = duplicateNotes(selected.map((id) => $notes.store[id]));
+        break;
+      }
+      case 'copy': {
+        $clipboard = selected.map((id) => $notes.store[id]);
+        break;
+      }
+      case 'front': {
+        selected.forEach((id) => bringToFront(id));
+        break;
+      }
+      case 'back': {
+        selected.forEach((id) => sendToBack(id));
         break;
       }
     }
@@ -147,13 +202,13 @@
     {#if selectionBox}
       <SelectionBox {...selectionStart} {...selectionBox} />
     {/if}
-    {#each $notes as note}
+    {#each $notes.order as id}
       <Note
-        selected={!!selected[note.id]}
-        on:startdrag={(e) => startDrag(e.detail, note.id)}
-        on:select={(e) => selectNote(note.id, e.detail)}
+        selected={selected.includes(id)}
+        on:startdrag={(e) => startDrag(e.detail, id)}
+        on:select={(e) => selectNote(id, e.detail)}
         on:operation={onOperation}
-        bind:note />
+        bind:note={$notes.store[id]} />
     {/each}
   </div>
 </div>

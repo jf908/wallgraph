@@ -23,7 +23,10 @@
     class="context-menu"
     bind:this={el}
     style={`left: ${$contextMenu.x}px; top: ${$contextMenu.y}px;`}>
-    {#each $contextMenu.menu as itemArr}
+    {#each $contextMenu.menu as itemArr, i}
+      {#if i !== 0}
+        <div class="divider" />
+      {/if}
       {#each itemArr as item}
         <div class="menu-item" on:mouseup={() => activate(item)}>
           {item.name}
@@ -53,5 +56,12 @@
   .menu-item:hover {
     background: var(--selection);
     color: white;
+  }
+
+  .divider {
+    width: 100%;
+    background: #dddddd;
+    height: 1px;
+    margin: 4px 0;
   }
 </style>
