@@ -96,7 +96,7 @@ export function sendToBack(ids: string[]) {
   notes.update(({ store, order }) => {
     return {
       store,
-      order: [...order.filter((id) => ids.includes(id)), ...order],
+      order: [...ids, ...order.filter((id) => !ids.includes(id))],
     };
   });
 }

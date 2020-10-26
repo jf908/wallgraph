@@ -72,15 +72,24 @@
     dragStart = null;
   }
 
-  function startDrag({ x, y }: { x: number; y: number }, id: string) {
-    dragStart = { x, y };
+  function startDrag(
+    { pos, alt }: { pos: { x: number; y: number }; alt: boolean },
+    id: string
+  ) {
+    dragStart = pos;
 
     if (selected.includes(id)) {
+      if (alt) {
+        selected = duplicateNotes(selected.map((id) => $notes.store[id]));
+      }
       selectedStart = selected.map((id) => ({
         x: $notes.store[id].x,
         y: $notes.store[id].y,
       }));
     } else {
+      if (alt) {
+        id = duplicateNotes([$notes.store[id]])[0];
+      }
       selected = [id];
       selectedStart = [{ x: $notes.store[id].x, y: $notes.store[id].y }];
     }
@@ -90,19 +99,21 @@
     switch (style) {
       case SelStyle.Normal: {
         selected = [id];
+        break;
       }
       case SelStyle.Toggle: {
-        console.log('tog');
         if (selected.includes(id)) {
-          selected = selected.filter((i) => i === id);
+          selected = selected.filter((i) => i !== id);
         } else {
           selected = [...selected, id];
         }
+        break;
       }
       case SelStyle.NoOverride: {
         if (!selected.includes(id)) {
           selected = [id];
         }
+        break;
       }
     }
 
@@ -153,6 +164,7 @@
     [
       {
         name: 'Paste',
+        shortcut: 'Ctrl+V',
         callback: () => {
           if ($clipboard) {
             selected = duplicateNotes($clipboard, $contextMenu);

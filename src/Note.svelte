@@ -12,7 +12,7 @@
   let el: HTMLElement;
   let textareaEl: HTMLTextAreaElement;
 
-  let mouseDownCoords: { x: number; y: number } | null = null;
+  let mouseDownPos: { x: number; y: number } | null = null;
 
   function onMouseDown(e: MouseEvent) {
     if (document.activeElement !== textareaEl) {
@@ -20,38 +20,46 @@
     }
 
     if (e.buttons !== 1) return;
-    mouseDownCoords = { x: e.clientX, y: e.clientY };
+    mouseDownPos = { x: e.clientX, y: e.clientY };
   }
 
   function onMouseMove(e: MouseEvent) {
     if (
       e.buttons === 1 &&
-      mouseDownCoords &&
+      mouseDownPos &&
       document.activeElement !== textareaEl
     ) {
-      dispatch('startdrag', mouseDownCoords);
-      mouseDownCoords = null;
+      dispatch('startdrag', { pos: mouseDownPos, alt: e.altKey });
+      mouseDownPos = null;
     }
   }
 
   function onMouseUp(e: MouseEvent) {
     if (
-      mouseDownCoords &&
-      mouseDownCoords.x === e.clientX &&
-      mouseDownCoords.y === e.clientY
+      mouseDownPos &&
+      mouseDownPos.x === e.clientX &&
+      mouseDownPos.y === e.clientY
     ) {
       dispatch('select', e.shiftKey ? SelStyle.Toggle : SelStyle.Normal);
       if (!e.shiftKey) {
         textareaEl.focus();
       }
     }
-    mouseDownCoords = null;
+    mouseDownPos = null;
   }
 
   const noteMenu = [
     [
-      { name: 'Cut', callback: () => dispatch('operation', 'cut') },
-      { name: 'Copy', callback: () => dispatch('operation', 'copy') },
+      {
+        name: 'Cut',
+        shortcut: 'Ctrl+X',
+        callback: () => dispatch('operation', 'cut'),
+      },
+      {
+        name: 'Copy',
+        shortcut: 'Ctrl+C',
+        callback: () => dispatch('operation', 'copy'),
+      },
       {
         name: 'Duplicate',
         callback: () => {

@@ -30,6 +30,7 @@
       {#each itemArr as item}
         <div class="menu-item" on:mouseup={() => activate(item)}>
           {item.name}
+          {#if item.shortcut}<span class="shortcut">{item.shortcut}</span>{/if}
         </div>
       {/each}
     {/each}
@@ -51,6 +52,7 @@
 
   .menu-item {
     padding: 4px 1em;
+    display: flex;
   }
 
   .menu-item:hover {
@@ -63,5 +65,11 @@
     background: #dddddd;
     height: 1px;
     margin: 4px 0;
+  }
+
+  .shortcut {
+    text-align: right;
+    padding-left: 3em;
+    margin-left: auto;
   }
 </style>
