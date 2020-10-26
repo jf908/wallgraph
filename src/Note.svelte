@@ -101,14 +101,17 @@
   on:mousedown={onMouseDown}
   on:mousemove={onMouseMove}
   on:mouseup={onMouseUp}>
-  <textarea bind:this={textareaEl} bind:value={note.content} />
+  <textarea
+    bind:this={textareaEl}
+    style={`width: ${note.width}px; height: ${note.height}px`}
+    bind:value={note.content} />
 </div>
 
 <style>
   .note {
     display: flex;
     position: absolute;
-    box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.1);
 
     user-select: none;
   }

@@ -150,6 +150,16 @@
         },
       },
     ],
+    [
+      {
+        name: 'Paste',
+        callback: () => {
+          if ($clipboard) {
+            selected = duplicateNotes($clipboard, $contextMenu);
+          }
+        },
+      },
+    ],
   ];
   function onContextMenu(e: MouseEvent) {
     e.preventDefault();
@@ -181,11 +191,11 @@
         break;
       }
       case 'front': {
-        selected.forEach((id) => bringToFront(id));
+        bringToFront(selected);
         break;
       }
       case 'back': {
-        selected.forEach((id) => sendToBack(id));
+        sendToBack(selected);
         break;
       }
     }

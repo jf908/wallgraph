@@ -27,7 +27,7 @@ export function createNote(x: number, y: number): Note {
     x,
     y,
     width: 300,
-    height: 50,
+    height: 80,
     content: '',
   };
 
@@ -44,10 +44,28 @@ export function duplicateNotes(
   relative?: { x: number; y: number }
 ): string[] {
   const newIds = Array.from({ length: oldNotes.length }).map(() => v4());
+
+  let offset;
+  if (relative) {
+    offset = oldNotes.reduce(
+      (acc, n) => ({ x: Math.min(acc.x, n.x), y: Math.min(acc.y, n.y) }),
+      { x: Infinity, y: Infinity }
+    );
+  }
+
   notes.update(({ store, order }) => {
     oldNotes.map((oldNote, i) => {
       const id = newIds[i];
-      store[id] = { ...oldNote, id, x: oldNote.x + 10, y: oldNote.y + 10 };
+      if (relative) {
+        store[id] = {
+          ...oldNote,
+          id,
+          x: relative.x - offset.x + oldNote.x,
+          y: relative.y - offset.y + oldNote.y,
+        };
+      } else {
+        store[id] = { ...oldNote, id, x: oldNote.x + 10, y: oldNote.y + 10 };
+      }
       return id;
     });
     return { store, order: [...order, ...newIds] };
@@ -65,15 +83,21 @@ export function deleteNotes(deletedNotes: string[]) {
   });
 }
 
-export function bringToFront(id: string) {
+export function bringToFront(ids: string[]) {
   notes.update(({ store, order }) => {
-    return { store, order: [...order, ...order.splice(order.indexOf(id), 1)] };
+    return {
+      store,
+      order: [...order.filter((id) => !ids.includes(id)), ...ids],
+    };
   });
 }
 
-export function sendToBack(id: string) {
+export function sendToBack(ids: string[]) {
   notes.update(({ store, order }) => {
-    return { store, order: [...order.splice(order.indexOf(id), 1), ...order] };
+    return {
+      store,
+      order: [...order.filter((id) => ids.includes(id)), ...order],
+    };
   });
 }
 
