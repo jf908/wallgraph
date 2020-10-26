@@ -8,6 +8,7 @@ export type MenuItem = {
 
 export const contextMenu = writable<{
   menu: MenuItem[][];
+  arg?: any;
   x: number;
   y: number;
 } | null>(null);

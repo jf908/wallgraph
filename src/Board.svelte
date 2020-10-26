@@ -4,31 +4,46 @@
     Toggle,
     NoOverride,
   }
+
+  const enum Dragging {
+    Note,
+    SelectionBox,
+    Line,
+  }
 </script>
 
 <script lang="ts">
-  import Note from './Note.svelte';
+  import NoteComponent from './Note.svelte';
   import SelectionBox from './SelectionBox.svelte';
 
   import {
     bringToFront,
     clipboard,
+    connections,
     createNote,
     deleteNotes,
     duplicateNotes,
+    makeConnection,
     notes,
     sendToBack,
   } from './store';
+  import type { Note } from './store';
   import { contextMenu } from './context-menu';
-  import { fixNegativeRectangle, rectCollision } from './rectangle';
+  import { fixNegativeRectangle, rectCollision, rectInside } from './rectangle';
+  import type { Rect } from './rectangle';
+  import Line from './Line.svelte';
 
   let selected: string[] = [];
   let selectedStart: { x: number; y: number }[] = [];
 
-  let selectionBox: { width: number; height: number } | null = null;
-  let selectionStart: { x: number; y: number } | null = null;
-
+  let dragging: Dragging | null = null;
   let dragStart: { x: number; y: number } | null = null;
+  let selectionBox: Rect | null = null;
+  let connectionNote: Note | null = null;
+  let connectionEnd: Rect | null = null;
+
+  let boardWidth;
+  let boardHeight;
 
   function onDoubleClick(e: MouseEvent) {
     createNote(e.clientX, e.clientY);
@@ -36,25 +51,22 @@
 
   function onMouseDown(e: MouseEvent) {
     selected = [];
-    selectionStart = { x: e.clientX, y: e.clientY };
+    dragging = Dragging.SelectionBox;
+    dragStart = { x: e.clientX, y: e.clientY };
   }
 
   function onMouseMove(e: MouseEvent) {
     if (e.buttons === 1) {
-      if (selectionStart) {
-        selectionBox = {
-          width: e.clientX - selectionStart.x,
-          height: e.clientY - selectionStart.y,
-        };
-        const box = fixNegativeRectangle({
-          ...selectionStart,
-          ...selectionBox,
+      if (dragging === Dragging.SelectionBox) {
+        selectionBox = fixNegativeRectangle({
+          ...dragStart,
+          width: e.clientX - dragStart.x,
+          height: e.clientY - dragStart.y,
         });
         selected = $notes.order.filter((id) =>
-          rectCollision($notes.store[id], box)
+          rectCollision($notes.store[id], selectionBox)
         );
-      }
-      if (dragStart) {
+      } else if (dragging === Dragging.Note) {
         selected.forEach((id, i) => {
           $notes.store[id] = {
             ...$notes.store[id],
@@ -62,20 +74,44 @@
             y: selectedStart[i].y + e.clientY - dragStart.y,
           };
         });
+      } else if (dragging === Dragging.Line) {
+        connectionEnd = { x: e.clientX, y: e.clientY, width: 0, height: 0 };
+        let found = false;
+        for (let id of $notes.order) {
+          const note = $notes.store[id];
+          if (rectInside(connectionEnd, note)) {
+            selected = [selected[0], id];
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          selected = [selected[0]];
+        }
       }
+    }
+    if (e.buttons === 4) {
+      // Drag scrolling
     }
   }
 
   function onMouseUp() {
-    selectionStart = null;
     selectionBox = null;
+    dragging = null;
     dragStart = null;
+
+    if (connectionNote && selected.length === 2) {
+      makeConnection([selected[0], selected[1]]);
+    }
+
+    connectionNote = null;
   }
 
   function startDrag(
     { pos, alt }: { pos: { x: number; y: number }; alt: boolean },
     id: string
   ) {
+    dragging = Dragging.Note;
     dragStart = pos;
 
     if (selected.includes(id)) {
@@ -123,6 +159,10 @@
   }
 
   function onKeydown(e: KeyboardEvent) {
+    if (document.activeElement.nodeName === 'TEXTAREA') {
+      return;
+    }
+
     if (e.code === 'KeyA' && e.ctrlKey) {
       e.preventDefault();
       selected = $notes.order;
@@ -152,6 +192,7 @@
     }
   }
 
+  // Context Menu
   const menu = [
     [
       {
@@ -212,26 +253,45 @@
       }
     }
   }
+
+  function startConnection(id: string) {
+    connectionNote = connectionEnd = $notes.store[id];
+    dragging = Dragging.Line;
+  }
 </script>
 
 <div class="board">
   <div
     class="inner"
+    bind:clientWidth={boardWidth}
+    bind:clientHeight={boardHeight}
     on:dblclick|self={onDoubleClick}
     on:mousedown|self={onMouseDown}
     on:contextmenu|self={onContextMenu}
     on:mousemove={onMouseMove}>
     {#if selectionBox}
-      <SelectionBox {...selectionStart} {...selectionBox} />
+      <SelectionBox {...selectionBox} />
     {/if}
     {#each $notes.order as id}
-      <Note
+      <NoteComponent
         selected={selected.includes(id)}
+        dragging={dragging === Dragging.Note}
         on:startdrag={(e) => startDrag(e.detail, id)}
         on:select={(e) => selectNote(id, e.detail)}
+        on:startconnection={() => startConnection(id)}
         on:operation={onOperation}
         bind:note={$notes.store[id]} />
     {/each}
+    <svg class="connections" width={boardWidth} height={boardHeight}>
+      {#each Object.entries($connections) as [id1, ids]}
+        {#each ids as id2}
+          <Line rect1={$notes.store[id1]} rect2={$notes.store[id2]} />
+        {/each}
+      {/each}
+      {#if connectionNote}
+        <Line rect1={connectionNote} rect2={connectionEnd} />
+      {/if}
+    </svg>
   </div>
 </div>
 
@@ -242,12 +302,17 @@
     width: 100vw;
     height: 100vh;
     overflow: scroll;
-    background: #f0f0f0;
+    background: var(--graph-background);
   }
 
   .inner {
     min-width: 100%;
     min-height: 100%;
     overflow: hidden;
+  }
+
+  .connections {
+    pointer-events: none;
+    position: absolute;
   }
 </style>

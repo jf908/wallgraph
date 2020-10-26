@@ -3,10 +3,26 @@
 }
 
 :root {
+  --text: black;
   --selection: rgb(54, 123, 252);
+  --selection-transparent: rgba(54, 123, 252, 0.1);
+  --graph-background: #f0f0f0;
+  --background: white;
+  --border: rgb(206, 206, 206);
+  --shadow: rgba(0, 0, 0, 0.1);
+  --heavy-shadow: rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme {
+  --text: white;
+  --graph-background: #0a0a0a;
+  --background: rgb(22, 22, 22);
+  --border: rgb(58, 58, 58);
+  --shadow: rgba(255, 255, 255, 0.05);
 }
 
 body {
+  color: var(--text);
   font-family: Lato, sans-serif;
   margin: 0;
 }
@@ -16,4 +32,6 @@ button,
 textarea {
   font-family: inherit;
   font-size: inherit;
+  background: inherit;
+  color: inherit;
 }

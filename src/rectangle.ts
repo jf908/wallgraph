@@ -14,6 +14,15 @@ export function rectCollision(rect1: Rect, rect2: Rect) {
   );
 }
 
+export function rectInside(pos: { x: number; y: number }, rect: Rect) {
+  return (
+    pos.x >= rect.x &&
+    pos.x < rect.x + rect.width &&
+    pos.y >= rect.y &&
+    pos.y < rect.y + rect.height
+  );
+}
+
 export function fixNegativeRectangle({ x, y, width, height }: Rect) {
   return {
     x: width < 0 ? x + width : x,

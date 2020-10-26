@@ -12,7 +12,7 @@
 
   function activate(item: MenuItem) {
     if (item.callback) {
-      item.callback(null);
+      item.callback($contextMenu.arg);
       $contextMenu = null;
     }
   }
@@ -45,8 +45,8 @@
     padding: 4px 0;
     z-index: 100000;
     font-size: 14px;
-    background: white;
-    border: 1px solid #dddddd;
+    background: var(--background);
+    border: 1px solid var(--border);
     user-select: none;
   }
 
@@ -62,7 +62,7 @@
 
   .divider {
     width: 100%;
-    background: #dddddd;
+    background: var(--border);
     height: 1px;
     margin: 4px 0;
   }
