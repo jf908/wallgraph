@@ -44,28 +44,39 @@
 </script>
 
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, tick } from 'svelte';
   import { contextMenu } from './context-menu';
   import { SelStyle } from './Board.svelte';
-  const dispatch = createEventDispatcher();
-
   import type { Note } from './store';
+  import { onMount } from 'svelte/internal';
 
   export let selected: boolean;
   export let dragging: boolean;
   export let note: Note;
 
-  let el: HTMLElement;
-  let textareaEl: HTMLTextAreaElement;
-  let focused: boolean = false;
+  const dispatch = createEventDispatcher();
 
+  let el: HTMLElement;
+  let textareaEl: HTMLElement | undefined;
+  let focused: boolean = false;
   let mouseDownPos: { x: number; y: number } | null = null;
 
-  function onMouseDown(e: MouseEvent) {
-    if (document.activeElement !== textareaEl) {
-      e.preventDefault();
+  async function focus() {
+    focused = true;
+    await tick();
+    if (textareaEl) {
+      textareaEl.focus();
+      // Put selection at end of text
+      const range = document.createRange();
+      range.selectNodeContents(textareaEl);
+      range.collapse();
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
+  }
 
+  function onMouseDown(e: MouseEvent) {
     if (e.buttons !== 1) return;
     mouseDownPos = { x: e.clientX, y: e.clientY };
   }
@@ -88,9 +99,8 @@
       mouseDownPos.y === e.clientY
     ) {
       dispatch('select', e.shiftKey ? SelStyle.Toggle : SelStyle.Normal);
-      if (!e.shiftKey) {
-        textareaEl.focus();
-        focused = true;
+      if (!e.shiftKey && !focused) {
+        focus();
       }
     }
     mouseDownPos = null;
@@ -110,6 +120,19 @@
       };
     }
   }
+
+  function startConnection() {
+    if (textareaEl) {
+      textareaEl.blur();
+    }
+    dispatch('startconnection');
+  }
+
+  onMount(() => {
+    if (selected) {
+      focus();
+    }
+  });
 </script>
 
 <div
@@ -123,16 +146,26 @@
   on:mousedown={onMouseDown}
   on:mousemove={onMouseMove}
   on:mouseup={onMouseUp}>
-  <textarea
-    bind:this={textareaEl}
-    tabindex="-1"
-    on:blur={() => (focused = false)}
-    style={`width: ${note.width}px; height: ${note.height}px`}
-    bind:value={note.content} />
+  {#if focused}
+    <div
+      class="textarea"
+      contenteditable
+      tabindex="-1"
+      bind:this={textareaEl}
+      on:blur={() => (focused = false)}
+      style={`width: ${note.width}px; height: ${note.height}px`}
+      bind:innerHTML={note.content} />
+  {:else}
+    <div
+      class="textarea"
+      style={`width: ${note.width}px; height: ${note.height}px`}>
+      {@html note.content}
+    </div>
+  {/if}
   {#if focused}
     <div
       class="connect-start"
-      on:mousedown|preventDefault={() => dispatch('startconnection')} />
+      on:mousedown|preventDefault|stopPropagation={startConnection} />
   {/if}
 </div>
 
@@ -141,7 +174,7 @@
     display: flex;
     position: absolute;
     z-index: 1;
-    box-shadow: 1px 2px 2px var(--shadow);
+    box-shadow: 1px 2px 4px var(--shadow);
     transition: box-shadow 0.2s;
 
     user-select: none;
@@ -170,7 +203,7 @@
     margin: auto;
   }
 
-  .note textarea {
+  .note .textarea {
     background: var(--background);
     width: 100%;
     height: 100%;
@@ -179,9 +212,10 @@
     padding: 1em;
     outline: 0;
     cursor: default;
+    user-select: none;
   }
 
-  .note.focused textarea {
+  .note.focused .textarea {
     cursor: text;
   }
 </style>
