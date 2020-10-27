@@ -3,7 +3,7 @@
 }
 
 :root {
-  --text: black;
+  --text: rgb(30, 30, 30);
   --faded-text: rgba(0, 0, 0, 0.8);
   --selection: rgb(54, 123, 252);
   --selection-transparent: rgba(54, 123, 252, 0.1);
@@ -15,7 +15,7 @@
 }
 
 body.dark-theme {
-  --text: white;
+  --text: rgb(210, 210, 210);
   --faded-text: rgba(255, 255, 255, 0.8);
   --graph-background: rgb(12, 12, 12);
   --background: rgb(22, 22, 22);
