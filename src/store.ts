@@ -1,4 +1,4 @@
-import { derived, writable } from 'svelte/store';
+import { derived, get, writable } from 'svelte/store';
 import { v4 } from 'uuid';
 
 export type Note = {
@@ -38,8 +38,8 @@ export function createNote(x: number, y: number): Note {
     id: v4(),
     x,
     y,
-    width: 300,
-    height: 80,
+    width: 280,
+    height: 51,
     content: '',
   };
 
@@ -196,3 +196,23 @@ notes.subscribe((notes) => {
 connections.subscribe((cons) => {
   localStorage.setItem('connections', JSON.stringify(cons));
 });
+
+export function serialize(): string {
+  const { store, order } = get(notes);
+  const cons = get(connections);
+
+  return JSON.stringify({
+    notes: store,
+    order,
+    connections: cons,
+  });
+}
+
+export function deserialize(data: any) {
+  if ('notes' in data && 'order' in data && 'connections' in data) {
+    notes.set({ store: data.notes, order: data.order });
+    connections.set(data.connections);
+  } else {
+    throw 'Incorrect data format';
+  }
+}

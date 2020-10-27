@@ -4,27 +4,31 @@
 
 :root {
   --text: black;
+  --faded-text: rgba(0, 0, 0, 0.8);
   --selection: rgb(54, 123, 252);
   --selection-transparent: rgba(54, 123, 252, 0.1);
   --graph-background: #f0f0f0;
   --background: white;
-  --border: rgb(206, 206, 206);
+  --border: rgb(211, 211, 211);
   --shadow: rgba(0, 0, 0, 0.1);
   --heavy-shadow: rgba(0, 0, 0, 0.3);
 }
 
 body.dark-theme {
   --text: white;
-  --graph-background: #0a0a0a;
+  --faded-text: rgba(255, 255, 255, 0.8);
+  --graph-background: rgb(12, 12, 12);
   --background: rgb(22, 22, 22);
   --border: rgb(58, 58, 58);
-  --shadow: rgba(255, 255, 255, 0.05);
+  --shadow: rgba(0, 0, 0, 0.5);
+  --heavy-shadow: rgba(0, 0, 0, 1);
 }
 
 body {
   color: var(--text);
   font-family: Lato, sans-serif;
   margin: 0;
+  user-select: none;
 }
 
 input,
@@ -34,4 +38,41 @@ textarea {
   font-size: inherit;
   background: inherit;
   color: inherit;
+}
+
+/* Scrollbar */
+
+::-webkit-scrollbar {
+  background: transparent;
+  width: 14px;
+  height: 14px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 30px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0);
+}
+
+.dark-theme ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }

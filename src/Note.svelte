@@ -47,6 +47,7 @@
   import { createEventDispatcher, tick } from 'svelte';
   import { contextMenu } from './context-menu';
   import { SelStyle } from './Board.svelte';
+  import { notes } from './store';
   import type { Note } from './store';
   import { onMount } from 'svelte/internal';
 
@@ -121,6 +122,11 @@
     }
   }
 
+  function onBlur() {
+    $notes.store[note.id].height = textareaEl.offsetHeight;
+    focused = false;
+  }
+
   function startConnection() {
     if (textareaEl) {
       textareaEl.blur();
@@ -152,13 +158,13 @@
       contenteditable
       tabindex="-1"
       bind:this={textareaEl}
-      on:blur={() => (focused = false)}
-      style={`width: ${note.width}px; height: ${note.height}px`}
+      on:blur={onBlur}
+      style={`width: ${note.width}px;`}
       bind:innerHTML={note.content} />
   {:else}
     <div
       class="textarea"
-      style={`width: ${note.width}px; height: ${note.height}px`}>
+      style={`width: ${note.width}px; ${note.height !== 0 && `height: ${note.height}px;`}`}>
       {@html note.content}
     </div>
   {/if}
@@ -206,6 +212,7 @@
   .note .textarea {
     background: var(--background);
     width: 100%;
+    min-height: 51px;
     height: 100%;
     border: 0;
     resize: none;

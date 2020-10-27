@@ -2,6 +2,7 @@ import { writable } from 'svelte/store';
 
 export type MenuItem = {
   name: string;
+  disabled?: boolean;
   shortcut?: string;
   callback?: (data: any) => void;
 };

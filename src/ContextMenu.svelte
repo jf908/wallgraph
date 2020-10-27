@@ -28,7 +28,10 @@
         <div class="divider" />
       {/if}
       {#each itemArr as item}
-        <div class="menu-item" on:mouseup={() => activate(item)}>
+        <div
+          class="menu-item"
+          class:disabled={item.disabled}
+          on:mouseup={() => activate(item)}>
           {item.name}
           {#if item.shortcut}<span class="shortcut">{item.shortcut}</span>{/if}
         </div>
@@ -53,6 +56,11 @@
   .menu-item {
     padding: 4px 1em;
     display: flex;
+  }
+
+  .menu-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   .menu-item:hover {

@@ -29,8 +29,8 @@
     notes,
     sendToBack,
   } from './store';
-  import type { Note } from './store';
   import { contextMenu } from './context-menu';
+  import type { MenuItem } from './context-menu';
   import {
     fixNegativeRectangle,
     lineRectCollision,
@@ -58,6 +58,13 @@
   $: boardWidth = Math.max(containerWidth, $boardSize.x);
   $: boardHeight = Math.max(containerHeight, $boardSize.y);
 
+  function getOffsetX() {
+    return -boardEl.offsetLeft + boardEl.scrollLeft;
+  }
+  function getOffsetY() {
+    return -boardEl.offsetTop + boardEl.scrollTop;
+  }
+
   function deselect() {
     selected = [];
     selectedLines = [];
@@ -65,7 +72,9 @@
 
   function onDoubleClick(e: MouseEvent) {
     deselect();
-    selected = [createNote(e.clientX, e.clientY).id];
+    selected = [
+      createNote(e.clientX + getOffsetX(), e.clientY + getOffsetY()).id,
+    ];
   }
 
   function onMouseDown(e: MouseEvent) {
@@ -73,8 +82,8 @@
       deselect();
       dragging = Dragging.SelectionBox;
       dragStart = {
-        x: e.clientX + boardEl.scrollLeft,
-        y: e.clientY + boardEl.scrollTop,
+        x: e.clientX + getOffsetX(),
+        y: e.clientY + getOffsetY(),
       };
     }
   }
@@ -92,8 +101,8 @@
       if (dragging === Dragging.SelectionBox) {
         selectionBox = fixNegativeRectangle({
           ...dragStart,
-          width: e.clientX + boardEl.scrollLeft - dragStart.x,
-          height: e.clientY + boardEl.scrollTop - dragStart.y,
+          width: e.clientX + getOffsetX() - dragStart.x,
+          height: e.clientY + getOffsetY() - dragStart.y,
         });
         selected = $notes.order.filter((id) =>
           rectCollision($notes.store[id], selectionBox)
@@ -101,8 +110,6 @@
         selectedLines = $lines
           .filter((line) => lineRectCollision(line, selectionBox))
           .map(({ id1, id2 }) => [id1, id2]);
-        // lineRectCollision($lines[0], selectionBox);
-        // console.log(lineRectCollision($lines[0], selectionBox));
       } else if (dragging === Dragging.Note) {
         selected.forEach((id, i) => {
           $notes.store[id] = {
@@ -113,8 +120,8 @@
         });
       } else if (dragging === Dragging.Line) {
         dragEnd = {
-          x: e.clientX + boardEl.scrollLeft,
-          y: e.clientY + boardEl.scrollTop,
+          x: e.clientX + getOffsetX(),
+          y: e.clientY + getOffsetY(),
         };
         let found = false;
         for (let id of $notes.order) {
@@ -259,7 +266,7 @@
   }
 
   // Context Menu
-  const menu = [
+  const menu: MenuItem[][] = [
     [
       {
         name: 'New Note',
@@ -275,7 +282,10 @@
         shortcut: 'Ctrl+V',
         callback: () => {
           if ($clipboard) {
-            selected = duplicateNotes($clipboard, $contextMenu);
+            selected = duplicateNotes($clipboard, {
+              x: $contextMenu.x + getOffsetX(),
+              y: $contextMenu.y + getOffsetY(),
+            });
           }
         },
       },
@@ -283,6 +293,7 @@
   ];
   function onContextMenu(e: MouseEvent) {
     e.preventDefault();
+    menu[1][0].disabled = !$clipboard;
     $contextMenu = {
       menu,
       x: e.pageX - window.scrollX,
@@ -390,7 +401,6 @@
   .inner {
     min-width: 100%;
     min-height: 100%;
-    user-select: none;
     overflow: hidden;
   }
 
