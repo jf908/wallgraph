@@ -182,19 +182,19 @@ export function deleteConnections(deletedCons: [string, string][]) {
 
 export const clipboard = writable<Note[] | null>(null);
 
-if (localStorage.getItem('notes')) {
-  notes.set(JSON.parse(localStorage.getItem('notes')));
+if (localStorage.getItem('wallgraph-notes')) {
+  notes.set(JSON.parse(localStorage.getItem('wallgraph-notes')));
 }
-if (localStorage.getItem('connections')) {
-  connections.set(JSON.parse(localStorage.getItem('connections')));
+if (localStorage.getItem('wallgraph-connections')) {
+  connections.set(JSON.parse(localStorage.getItem('wallgraph-connections')));
 }
 
 notes.subscribe((notes) => {
-  localStorage.setItem('notes', JSON.stringify(notes));
+  localStorage.setItem('wallgraph-notes', JSON.stringify(notes));
 });
 
 connections.subscribe((cons) => {
-  localStorage.setItem('connections', JSON.stringify(cons));
+  localStorage.setItem('wallgraph-connections', JSON.stringify(cons));
 });
 
 export function serialize(): string {
